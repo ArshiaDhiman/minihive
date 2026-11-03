@@ -1,0 +1,21 @@
+{
+  "name": "minihive",
+  "version": "1.0.0",
+  "description": "Multi-tenant user, licence and seat management platform. Amazon Cognito auth, role- and policy-based permissions, PostgreSQL with PL/pgSQL auditing, and event-driven provisioning via outbox → SNS → SQS → Lambda → DynamoDB. NestJS, React, TypeScript, AWS CDK.",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "private": true,
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "workspaces": [
+    "apps/api",
+    "apps/web",
+    "apps/worker"
+  ],
+  "devDependencies": {
+    "typescript": "~6.0.2"
+  }
+}
