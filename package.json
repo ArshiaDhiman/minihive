@@ -3,19 +3,24 @@
   "version": "1.0.0",
   "description": "Multi-tenant user, licence and seat management platform. Amazon Cognito auth, role- and policy-based permissions, PostgreSQL with PL/pgSQL auditing, and event-driven provisioning via outbox → SNS → SQS → Lambda → DynamoDB. NestJS, React, TypeScript, AWS CDK.",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "db:migrate": "node --env-file=.env infra/db/migrate.ts"
   },
   "private": true,
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
   "workspaces": [
     "apps/api",
     "apps/web",
     "apps/worker"
   ],
   "devDependencies": {
+    "@types/pg": "^8.23.1",
     "typescript": "~6.0.2"
+  },
+  "dependencies": {
+    "pg": "^8.23.1"
   }
 }
