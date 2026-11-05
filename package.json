@@ -4,7 +4,8 @@
   "description": "Multi-tenant user, licence and seat management platform. Amazon Cognito auth, role- and policy-based permissions, PostgreSQL with PL/pgSQL auditing, and event-driven provisioning via outbox → SNS → SQS → Lambda → DynamoDB. NestJS, React, TypeScript, AWS CDK.",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "db:migrate": "node --env-file=.env infra/db/migrate.ts"
+    "db:migrate": "node --env-file=.env infra/db/migrate.ts",
+    "db:seed": "node --env-file=.env infra/db/seed.ts"
   },
   "private": true,
   "keywords": [],
