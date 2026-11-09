@@ -3,6 +3,8 @@
   "compilerOptions": {
     "module": "nodenext",
     "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "erasableSyntaxOnly": true,
     "types": ["node"]
   },
   "include": ["bin", "lib"]
