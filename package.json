@@ -5,7 +5,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "db:migrate": "node --env-file=.env infra/db/migrate.ts",
-    "db:seed": "node --env-file=.env infra/db/seed.ts"
+    "db:seed": "node --env-file=.env infra/db/seed.ts",
+    "cdk": "npm exec -w infra/cdk -- cdk"
   },
   "private": true,
   "keywords": [],
@@ -15,7 +16,8 @@
   "workspaces": [
     "apps/api",
     "apps/web",
-    "apps/worker"
+    "apps/worker",
+    "infra/cdk"
   ],
   "devDependencies": {
     "@types/pg": "^8.23.1",
