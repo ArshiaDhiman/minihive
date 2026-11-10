@@ -8,15 +8,22 @@ import {
 } from "@nestjs/common";
 import { CognitoJwtVerifier } from "aws-jwt-verify";
 import pg from "pg";
-import { DB } from "./db.module.js";
+import { DB } from "../db/db.module.js";
+import type { Actor, OrgRole } from "../permissions/policy.js";
 
 // Set on the request by AuthGuard, read with @CurrentUser()
-export type AuthUser = {
+export type AuthUser = Actor & {
   id: string; // users.id
   sub: string; // Cognito sub
   email: string;
   name: string;
-  groups: string[]; // cognito:groups claim
+};
+
+type UserRow = {
+  id: string;
+  email: string;
+  name: string;
+  memberships: { orgId: string; role: OrgRole }[];
 };
 
 type AuthRequest = {
@@ -52,25 +59,40 @@ export class AuthGuard implements CanActivate {
       throw new UnauthorizedException("Missing bearer token");
     }
 
-    let payload;
-    try {
-      payload = await this.verifier.verify(header.slice("Bearer ".length));
-    } catch {
-      throw new UnauthorizedException("Invalid token");
-    }
+    const { sub, groups } = await this.verifyToken(header.slice("Bearer ".length));
 
-    // Valid token, but no account on our side
-    const { rows } = await this.db.query<{ id: string; email: string; name: string }>(
-      "SELECT id, email, name FROM users WHERE idp_sub = $1",
-      [payload.sub],
+    // Org roles come from the database on every request, so changes apply immediately.
+    const { rows } = await this.db.query<UserRow>(
+      `SELECT u.id, u.email, u.name,
+              COALESCE(
+                json_agg(json_build_object('orgId', m.org_id, 'role', m.role))
+                  FILTER (WHERE m.org_id IS NOT NULL),
+                '[]'
+              ) AS memberships
+       FROM users u
+       LEFT JOIN memberships m ON m.user_id = u.id
+       WHERE u.idp_sub = $1
+       GROUP BY u.id`,
+      [sub],
     );
+    // Valid token, but no account on our side
     const user = rows[0];
     if (!user) {
       throw new UnauthorizedException("Unknown user");
     }
 
-    request.user = { ...user, sub: payload.sub, groups: payload["cognito:groups"] ?? [] };
+    request.user = { ...user, sub, groups };
     return true;
+  }
+
+  // Overridden in integration tests, which don't have real Cognito tokens
+  protected async verifyToken(token: string): Promise<{ sub: string; groups: string[] }> {
+    try {
+      const payload = await this.verifier.verify(token);
+      return { sub: payload.sub, groups: payload["cognito:groups"] ?? [] };
+    } catch {
+      throw new UnauthorizedException("Invalid token");
+    }
   }
 }
 

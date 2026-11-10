@@ -1,7 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 import pg from "pg";
-import type { AuthUser } from "./auth.js";
-import { DB } from "./db.module.js";
+import type { AuthUser } from "../auth/auth.js";
+import { DB } from "../db/db.module.js";
 
 type Membership = { orgId: string; orgName: string; role: "org_admin" | "member" };
 
