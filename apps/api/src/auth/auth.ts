@@ -8,15 +8,22 @@ import {
 } from "@nestjs/common";
 import { CognitoJwtVerifier } from "aws-jwt-verify";
 import pg from "pg";
-import { DB } from "./db.module.js";
+import { DB } from "../db/db.module.js";
+import type { Actor, OrgRole } from "../permissions/policy.js";
 
 // Set on the request by AuthGuard, read with @CurrentUser()
-export type AuthUser = {
+export type AuthUser = Actor & {
   id: string; // users.id
   sub: string; // Cognito sub
   email: string;
   name: string;
-  groups: string[]; // cognito:groups claim
+};
+
+type UserRow = {
+  id: string;
+  email: string;
+  name: string;
+  memberships: { orgId: string; role: OrgRole }[];
 };
 
 type AuthRequest = {
@@ -59,17 +66,31 @@ export class AuthGuard implements CanActivate {
       throw new UnauthorizedException("Invalid token");
     }
 
-    // Valid token, but no account on our side
-    const { rows } = await this.db.query<{ id: string; email: string; name: string }>(
-      "SELECT id, email, name FROM users WHERE idp_sub = $1",
+    // Org roles come from the database on every request, so changes apply immediately.
+    const { rows } = await this.db.query<UserRow>(
+      `SELECT u.id, u.email, u.name,
+              COALESCE(
+                json_agg(json_build_object('orgId', m.org_id, 'role', m.role))
+                  FILTER (WHERE m.org_id IS NOT NULL),
+                '[]'
+              ) AS memberships
+       FROM users u
+       LEFT JOIN memberships m ON m.user_id = u.id
+       WHERE u.idp_sub = $1
+       GROUP BY u.id`,
       [payload.sub],
     );
+    // Valid token, but no account on our side
     const user = rows[0];
     if (!user) {
       throw new UnauthorizedException("Unknown user");
     }
 
-    request.user = { ...user, sub: payload.sub, groups: payload["cognito:groups"] ?? [] };
+    request.user = {
+      ...user,
+      sub: payload.sub,
+      groups: payload["cognito:groups"] ?? [],
+    };
     return true;
   }
 }

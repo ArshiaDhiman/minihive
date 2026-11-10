@@ -1,5 +1,5 @@
 import { Controller, Get } from "@nestjs/common";
-import { type AuthUser, CurrentUser } from "./auth.js";
+import { type AuthUser, CurrentUser } from "../auth/auth.js";
 import { type Me, MeService } from "./me.service.js";
 
 @Controller("me")
