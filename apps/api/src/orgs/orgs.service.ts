@@ -2,6 +2,7 @@ import { BadRequestException, Inject, Injectable, NotFoundException } from "@nes
 import pg from "pg";
 import type { AuthUser } from "../auth/auth.js";
 import { DB } from "../db/db.module.js";
+import { inTransaction } from "../db/transaction.js";
 import { authorize } from "../permissions/authorize.js";
 import type { OrgRole } from "../permissions/policy.js";
 
@@ -27,6 +28,7 @@ export type AuditEntry = {
   oldData: Record<string, unknown> | null;
   newData: Record<string, unknown> | null;
   changedAt: Date;
+  changedBy: string | null; // user name; null for scripts/seeds
 };
 
 export type NewLicence = { productCode: string; seats: number; validFrom: Date; validTo: Date };
@@ -53,11 +55,13 @@ export class OrgsService {
       throw new BadRequestException("validTo must be after validFrom");
     }
 
-    const { rows } = await this.db.query<{ id: string }>(
-      `INSERT INTO licences (org_id, product_id, seats, valid_from, valid_to)
-       SELECT $1, p.id, $3, $4, $5 FROM products p WHERE p.code = $2
-       RETURNING id`,
-      [orgId, input.productCode, input.seats, input.validFrom, input.validTo],
+    const { rows } = await inTransaction(this.db, user.id, (client) =>
+      client.query<{ id: string }>(
+        `INSERT INTO licences (org_id, product_id, seats, valid_from, valid_to)
+         SELECT $1, p.id, $3, $4, $5 FROM products p WHERE p.code = $2
+         RETURNING id`,
+        [orgId, input.productCode, input.seats, input.validFrom, input.validTo],
+      ),
     );
     if (!rows[0]) {
       throw new BadRequestException(`Unknown product ${input.productCode}`);
@@ -112,12 +116,13 @@ export class OrgsService {
 
     // audit_log has no org_id column, so find the org through the logged row data.
     // TODO: add an indexed org_id to audit_log; this JSON lookup scans every row.
-    // TODO: record who made each change (changed_by), set via SET LOCAL app.user_id.
     // TODO: paginate (e.g. ?before=<changedAt>) instead of a fixed LIMIT.
     const { rows } = await this.db.query<AuditEntry>(
       `SELECT a.id, a.table_name AS "tableName", a.action,
-              a.old_data AS "oldData", a.new_data AS "newData", a.changed_at AS "changedAt"
+              a.old_data AS "oldData", a.new_data AS "newData", a.changed_at AS "changedAt",
+              u.name AS "changedBy"
        FROM audit_log a
+       LEFT JOIN users u ON u.id = a.changed_by
        WHERE (a.table_name = 'licences'
               AND (COALESCE(a.new_data, a.old_data)->>'org_id')::uuid = $1)
           OR (a.table_name = 'seat_assignments'

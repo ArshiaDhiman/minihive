@@ -6,13 +6,16 @@ import { MeController } from "./me/me.controller.js";
 import { MeService } from "./me/me.service.js";
 import { OrgsController } from "./orgs/orgs.controller.js";
 import { OrgsService } from "./orgs/orgs.service.js";
+import { SeatsController } from "./seats/seats.controller.js";
+import { SeatsService } from "./seats/seats.service.js";
 
 @Module({
   imports: [DbModule],
-  controllers: [MeController, OrgsController],
+  controllers: [MeController, OrgsController, SeatsController],
   providers: [
     MeService,
     OrgsService,
+    SeatsService,
     // Auth required on every route by default
     { provide: APP_GUARD, useClass: AuthGuard },
   ],
