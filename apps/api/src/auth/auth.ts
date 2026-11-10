@@ -59,12 +59,7 @@ export class AuthGuard implements CanActivate {
       throw new UnauthorizedException("Missing bearer token");
     }
 
-    let payload;
-    try {
-      payload = await this.verifier.verify(header.slice("Bearer ".length));
-    } catch {
-      throw new UnauthorizedException("Invalid token");
-    }
+    const { sub, groups } = await this.verifyToken(header.slice("Bearer ".length));
 
     // Org roles come from the database on every request, so changes apply immediately.
     const { rows } = await this.db.query<UserRow>(
@@ -78,7 +73,7 @@ export class AuthGuard implements CanActivate {
        LEFT JOIN memberships m ON m.user_id = u.id
        WHERE u.idp_sub = $1
        GROUP BY u.id`,
-      [payload.sub],
+      [sub],
     );
     // Valid token, but no account on our side
     const user = rows[0];
@@ -86,12 +81,18 @@ export class AuthGuard implements CanActivate {
       throw new UnauthorizedException("Unknown user");
     }
 
-    request.user = {
-      ...user,
-      sub: payload.sub,
-      groups: payload["cognito:groups"] ?? [],
-    };
+    request.user = { ...user, sub, groups };
     return true;
+  }
+
+  // Overridden in integration tests, which don't have real Cognito tokens
+  protected async verifyToken(token: string): Promise<{ sub: string; groups: string[] }> {
+    try {
+      const payload = await this.verifier.verify(token);
+      return { sub: payload.sub, groups: payload["cognito:groups"] ?? [] };
+    } catch {
+      throw new UnauthorizedException("Invalid token");
+    }
   }
 }
 
