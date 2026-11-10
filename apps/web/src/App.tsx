@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "react-oidc-context";
 import { api } from "./api";
+import { OrgAdmin } from "./components/OrgAdmin";
 
 type Me = {
   name: string;
@@ -82,6 +83,13 @@ function MePanel({ accessToken }: { accessToken: string }) {
           ))}
         </ul>
       )}
+
+      {/* Only org admins see this. It just hides UI: the API still checks every request. */}
+      {me.memberships
+        .filter((m) => m.role === "org_admin")
+        .map((m) => (
+          <OrgAdmin key={m.orgId} orgId={m.orgId} orgName={m.orgName} accessToken={accessToken} />
+        ))}
     </>
   );
 }
