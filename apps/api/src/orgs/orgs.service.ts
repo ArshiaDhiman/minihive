@@ -37,6 +37,13 @@ export type NewLicence = { productCode: string; seats: number; validFrom: Date; 
 export class OrgsService {
   constructor(@Inject(DB) private readonly db: pg.Pool) {}
 
+  async listOrgs(user: AuthUser): Promise<Org[]> {
+    authorize(user, "org:list");
+
+    const { rows } = await this.db.query<Org>("SELECT id, name FROM organisations ORDER BY name");
+    return rows;
+  }
+
   async createOrg(user: AuthUser, name: string): Promise<Org> {
     authorize(user, "org:create");
 
