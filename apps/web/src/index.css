@@ -1,0 +1,48 @@
+/* Just enough to make the demo readable */
+body {
+  font-family: system-ui, sans-serif;
+  line-height: 1.5;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+/* MiniHive and RepairInfo are separate products, so each gets its own box */
+.products {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* same width */
+  gap: 1rem; /* grid stretches both boxes to the same height */
+}
+
+.product {
+  border: 2px solid;
+  border-radius: 8px;
+  padding: 0 1rem 1rem;
+}
+
+.product > header {
+  border-bottom: 1px solid #ccc;
+}
+
+.minihive {
+  border-color: #3b6fd1;
+}
+
+.repairinfo {
+  border-color: #d1873b;
+}
+
+.hint {
+  color: #555;
+  font-style: italic;
+}
+
+nav button.active {
+  font-weight: bold;
+}
+
+@media (max-width: 800px) {
+  .products {
+    grid-template-columns: 1fr;
+  }
+}
