@@ -5,7 +5,7 @@
 import { PublishCommand, SNSClient } from "@aws-sdk/client-sns";
 import pg from "pg";
 
-type OutboxRow = { id: string; type: string; payload: unknown };
+type OutboxRow = { id: string; type: string; payload: { userSub: string } };
 
 const TOPIC_ARN = process.env.SNS_TOPIC_ARN!;
 const BATCH_SIZE = 10;
@@ -43,6 +43,11 @@ const publishPending = async (): Promise<number> => {
         new PublishCommand({
           TopicArn: TOPIC_ARN,
           Message: JSON.stringify({ eventId: row.id, type: row.type, payload: row.payload }),
+          // FIFO topic: events with the same group are delivered in order, one at a time.
+          // Per user, so different users are still processed in parallel.
+          MessageGroupId: row.payload.userSub,
+          // SNS drops a repeat of the same event within 5 minutes
+          MessageDeduplicationId: row.id,
         }),
       );
       console.log(`published ${row.type} ${row.id}`);

@@ -16,18 +16,20 @@ const TABLE_NAME = process.env.TABLE_NAME!;
 const db = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
 export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
-  const batchItemFailures: SQSBatchResponse["batchItemFailures"] = [];
-
-  // Report failures per message, so one bad message doesn't retry the whole batch
-  for (const record of event.Records) {
+  for (const [index, record] of event.Records.entries()) {
     try {
       await processRecord(record);
     } catch (err) {
       console.error(`message ${record.messageId} failed`, err);
-      batchItemFailures.push({ itemIdentifier: record.messageId });
+      // FIFO: stop here and hand back this message and everything after it, otherwise a
+      // later event for the same user would overtake the failed one. Already processed
+      // messages aren't retried.
+      return {
+        batchItemFailures: event.Records.slice(index).map((r) => ({ itemIdentifier: r.messageId })),
+      };
     }
   }
-  return { batchItemFailures };
+  return { batchItemFailures: [] };
 };
 
 const processRecord = async (record: SQSRecord): Promise<void> => {

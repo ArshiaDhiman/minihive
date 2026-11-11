@@ -25,18 +25,24 @@ export class ProvisioningStack extends Stack {
       removalPolicy: RemovalPolicy.DESTROY,
     });
 
-    // One topic for all provisioning events; each product subscribes its own queue
+    // One topic for all provisioning events; each product subscribes its own queue.
+    // FIFO so each user's events arrive in order (the worker sets MessageGroupId = userSub).
+    // A standard queue let assign → revoke → assign land as assign → assign → revoke.
     const topic = new sns.Topic(this, "ProvisioningEvents", {
-      topicName: "provisioning-events",
+      topicName: "provisioning-events.fifo",
+      fifo: true,
     });
 
+    // A FIFO queue's DLQ has to be FIFO too
     const deadLetterQueue = new sqs.Queue(this, "RepairInfoDeadLetterQueue", {
-      queueName: "repairinfo-provisioning-dlq",
+      queueName: "repairinfo-provisioning-dlq.fifo",
+      fifo: true,
       retentionPeriod: Duration.days(14),
     });
 
     const queue = new sqs.Queue(this, "RepairInfoQueue", {
-      queueName: "repairinfo-provisioning",
+      queueName: "repairinfo-provisioning.fifo",
+      fifo: true,
       visibilityTimeout: Duration.seconds(60), // must be longer than the Lambda timeout
       deadLetterQueue: { queue: deadLetterQueue, maxReceiveCount: 3 },
     });
