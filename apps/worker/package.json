@@ -1,14 +1,14 @@
 {
   "name": "worker",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "devDependencies": {},
+  "private": true,
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "node --watch --env-file=../../.env src/index.ts",
+    "start": "node --env-file=../../.env src/index.ts"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs"
+  "dependencies": {
+    "@aws-sdk/client-sns": "^3.1166.0",
+    "pg": "^8.23.1"
+  }
 }
