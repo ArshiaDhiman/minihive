@@ -8,6 +8,7 @@ export type Actor = {
 };
 
 export type Action =
+  | "org:list"
   | "org:create"
   | "licence:create"
   | "org:users:read"
@@ -27,6 +28,7 @@ const isOrgAdmin: Policy = (actor, orgId) =>
   actor.memberships.some((m) => m.orgId === orgId && m.role === "org_admin");
 
 const POLICIES: Record<Action, Policy> = {
+  "org:list": isPlatformAdmin,
   "org:create": isPlatformAdmin,
   "licence:create": isPlatformAdmin,
   "org:users:read": isOrgAdmin,

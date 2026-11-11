@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "react-oidc-context";
 import { api } from "./api";
+import { CreateLicence } from "./components/CreateLicence";
+import { CreateOrganisation } from "./components/CreateOrganisation";
 import { OrgAdmin } from "./components/OrgAdmin";
+import { formatDate } from "./format";
 import { RepairInfo } from "./components/RepairInfo";
 
 type Me = {
@@ -45,7 +48,7 @@ export function App() {
 function MePanel({ accessToken }: { accessToken: string }) {
   const [me, setMe] = useState<Me>();
   const [error, setError] = useState<string>();
-  const [tab, setTab] = useState("account"); // "account" or an admin org's id
+  const [tab, setTab] = useState("account"); // "account", "orgs", "licences" or an admin org's id
 
   useEffect(() => {
     api<Me>("/me", accessToken).then(setMe, (err: Error) => setError(err.message));
@@ -56,8 +59,15 @@ function MePanel({ accessToken }: { accessToken: string }) {
 
   // Only org admins get a manage tab. It just hides UI: the API still checks every request.
   const adminOrgs = me.memberships.filter((m) => m.role === "org_admin");
+  const isPlatformAdmin = me.groups.includes("platform_admin");
   const tabs = [
     { id: "account", label: "My account" },
+    ...(isPlatformAdmin
+      ? [
+          { id: "orgs", label: "Create organisation" },
+          { id: "licences", label: "Create licence" },
+        ]
+      : []),
     ...adminOrgs.map((m) => ({ id: m.orgId, label: `Manage ${m.orgName}` })),
   ];
 
@@ -102,14 +112,17 @@ function MePanel({ accessToken }: { accessToken: string }) {
               <ul>
                 {me.seats.map((s) => (
                   <li key={s.licenceId}>
-                    {s.productCode} at {s.orgName}, {s.active ? "active" : "expired"} until{" "}
-                    {new Date(s.validTo).toLocaleDateString()}
+                    {s.productCode} at {s.orgName}, {s.active ? "active until" : "expired"}{" "}
+                    {formatDate(s.validTo)}
                   </li>
                 ))}
               </ul>
             )}
           </>
         )}
+
+        {tab === "orgs" && <CreateOrganisation accessToken={accessToken} />}
+        {tab === "licences" && <CreateLicence accessToken={accessToken} />}
 
         {adminOrgs
           .filter((m) => m.orgId === tab)

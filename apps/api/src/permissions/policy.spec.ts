@@ -22,7 +22,8 @@ describe("platform-only actions", () => {
     ["alice (platform_admin)", alice, true],
     ["bob (org_admin)", bob, false],
     ["carol (member)", carol, false],
-  ])("org:create / licence:create: %s → %s", (_name, actor, expected) => {
+  ])("org:list / org:create / licence:create: %s → %s", (_name, actor, expected) => {
+    expect(can(actor, "org:list")).toBe(expected);
     expect(can(actor, "org:create")).toBe(expected);
     expect(can(actor, "licence:create", GARAGE_A)).toBe(expected);
   });

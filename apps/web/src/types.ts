@@ -7,6 +7,7 @@ export type Licence = {
   productCode: string;
   seats: number;
   used: number;
+  validFrom: string;
   validTo: string;
   active: boolean;
   holders: { userId: string; name: string }[];
@@ -21,3 +22,5 @@ export type AuditEntry = {
   changedAt: string;
   changedBy: string | null;
 };
+
+export type Org = { id: string; name: string };

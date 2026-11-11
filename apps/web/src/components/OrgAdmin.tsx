@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "../api";
+import { formatDateTime } from "../format";
 import type { AuditEntry, Licence, OrgUser } from "../types";
 import { LicenceCard } from "./LicenceCard";
 
@@ -75,7 +76,7 @@ export const OrgAdmin = ({ orgId, orgName, accessToken }: Props) => {
       <ul>
         {audit.map((entry) => (
           <li key={entry.id}>
-            {new Date(entry.changedAt).toLocaleString()}: {describe(entry, userName)}, by{" "}
+            {formatDateTime(entry.changedAt)}: {describe(entry, userName)}, by{" "}
             {entry.changedBy ?? "system"}
           </li>
         ))}
