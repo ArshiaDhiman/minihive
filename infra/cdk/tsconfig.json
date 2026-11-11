@@ -5,7 +5,13 @@
     "noEmit": true,
     "allowImportingTsExtensions": true,
     "erasableSyntaxOnly": true,
-    "types": ["node"]
+    "types": [
+      "node"
+    ]
   },
-  "include": ["bin", "lib"]
+  "include": [
+    "bin",
+    "lib",
+    "lambdas"
+  ]
 }
