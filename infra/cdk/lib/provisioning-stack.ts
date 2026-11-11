@@ -10,9 +10,14 @@ import { SqsSubscription } from "aws-cdk-lib/aws-sns-subscriptions";
 import * as sqs from "aws-cdk-lib/aws-sqs";
 import type { Construct } from "constructs";
 
+type ProvisioningStackProps = StackProps & {
+  userPoolId: string;
+  webClientId: string;
+};
+
 // outbox → (worker) → SNS → SQS → Lambda → DynamoDB
 export class ProvisioningStack extends Stack {
-  constructor(scope: Construct, id: string, props?: StackProps) {
+  constructor(scope: Construct, id: string, props: ProvisioningStackProps) {
     super(scope, id, props);
 
     // RepairInfo's own store: USER#<sub> / PRODUCT#<code> = has access,
@@ -69,6 +74,40 @@ export class ProvisioningStack extends Stack {
       new SqsEventSource(queue, { batchSize: 10, reportBatchItemFailures: true }),
     );
 
+    // RepairInfo's API: checks the caller's token, then their row in the access table
+    const repairInfoApi = new NodejsFunction(this, "RepairInfoApi", {
+      functionName: "repairinfo-api",
+      entry: join(import.meta.dirname, "../lambdas/repairinfo-api/index.ts"),
+      runtime: lambda.Runtime.NODEJS_22_X,
+      architecture: lambda.Architecture.ARM_64,
+      timeout: Duration.seconds(10),
+      environment: {
+        TABLE_NAME: accessTable.tableName,
+        USER_POOL_ID: props.userPoolId,
+        CLIENT_ID: props.webClientId,
+      },
+      logGroup: new logs.LogGroup(this, "RepairInfoApiLogs", {
+        logGroupName: "/aws/lambda/repairinfo-api",
+        retention: logs.RetentionDays.ONE_WEEK,
+        removalPolicy: RemovalPolicy.DESTROY,
+      }),
+    });
+
+    // It only ever reads access, never changes it
+    accessTable.grantReadData(repairInfoApi);
+
+    // Public HTTPS URL, no API Gateway. NONE means AWS doesn't check the caller,
+    // so the handler does it with the Cognito token.
+    const repairInfoUrl = repairInfoApi.addFunctionUrl({
+      authType: lambda.FunctionUrlAuthType.NONE,
+      cors: {
+        allowedOrigins: ["http://localhost:5173"],
+        allowedMethods: [lambda.HttpMethod.GET],
+        allowedHeaders: ["authorization"],
+      },
+    });
+
+    new CfnOutput(this, "RepairInfoUrl", { value: repairInfoUrl.url });
     new CfnOutput(this, "TopicArn", { value: topic.topicArn });
     new CfnOutput(this, "AccessTableName", { value: accessTable.tableName });
     new CfnOutput(this, "DeadLetterQueueUrl", { value: deadLetterQueue.queueUrl });

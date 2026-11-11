@@ -9,5 +9,9 @@ const env = {
   region: process.env.CDK_DEFAULT_REGION,
 };
 
-new AuthStack(app, "MinihiveAuth", { env });
-new ProvisioningStack(app, "MinihiveProvisioning", { env });
+const auth = new AuthStack(app, "MinihiveAuth", { env });
+new ProvisioningStack(app, "MinihiveProvisioning", {
+  env,
+  userPoolId: auth.userPoolId,
+  webClientId: auth.webClientId,
+});

@@ -2,6 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { AuthProvider } from "react-oidc-context";
 import { App } from "./App";
+import "./index.css";
 
 const userPoolId = import.meta.env.COGNITO_USER_POOL_ID;
 const region = userPoolId.split("_")[0]; // eu-west-1_AbC123 -> eu-west-1

@@ -11,6 +11,10 @@ import type { Construct } from "constructs";
 const WEB_APP_URL = "http://localhost:5173/";
 
 export class AuthStack extends Stack {
+  // Used by other stacks to verify tokens
+  readonly userPoolId: string;
+  readonly webClientId: string;
+
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
 
@@ -63,6 +67,9 @@ export class AuthStack extends Stack {
       refreshTokenValidity: Duration.days(1),
       preventUserExistenceErrors: true,
     });
+
+    this.userPoolId = userPool.userPoolId;
+    this.webClientId = webClient.userPoolClientId;
 
     new CfnOutput(this, "UserPoolId", { value: userPool.userPoolId });
     new CfnOutput(this, "UserPoolClientId", {
